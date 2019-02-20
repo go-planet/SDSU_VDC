@@ -112,6 +112,13 @@
                 "description": "Administratrive Password for VMs."
             }
         },
+        "windowsVMResourceGroupName": {
+            "type": "string",
+            "defaultValue": "rg-Environment-Department-WindowsVM",
+            "metadata": {
+                "description": "Name of the Resource Group for the Windows VM"
+            }
+        },
         "windowsvmName": {
             "type": "string",
             "metadata": {
@@ -146,8 +153,14 @@
             "metadata": {
                 "description": "The Windows version for the VM. This will pick a fully patched image of this given Windows version."
             }
-          }
-        ,
+        },
+        "linuxVMResourceGroupName": {
+            "type": "string",
+            "defaultValue": "rg-Environment-Department-LinuxVM",
+            "metadata": {
+                "description": "Name of the Resource Group for the Linux VM"
+            }
+        },
         "linuxvmName": {
             "type": "string",
             "metadata": {
@@ -181,16 +194,24 @@
             "metadata": {
                 "description": "The Linux version (Ubuntu) for the VM. This will pick a fully patched image of the given Linux version."
             }
+        },
+        "deployvng": {
+            "type": "string",
+            "defaultValue": "No",
+            "allowedValues": [
+                "Yes",
+                "No"
+            ],
+            "metadata": {
+              "description": "Enables deployment of VirtualNetworkGateway"
+            }
         }
     },
     "variables": {
         "VNetGatewayPIPName": "[concat(parameters('VNetGatewayName'),'_pip')]",
         "GatewaySubnetRef": "[concat(resourceId('Microsoft.Network/virtualNetworks',parameters('HubVNetName')),'/subnets/','GatewaySubnet')]",
         "ADSubnetRef": "[concat(resourceId('Microsoft.Network/virtualNetworks',parameters('HubVNetName')),'/subnets/',parameters('ADSubnetName'))]",
-        "DMZSubnetRef": "[concat(resourceId('Microsoft.Network/virtualNetworks',parameters('HubVNetName')),'/subnets/',parameters('DMZSubnetName'))]",
-        "HubSubID": "[subscription().subscriptionId]",
-        "HubRGName": "[resourceGroup().name]",
-        "HubVNetID": "[resourceId(variables('HubSubID'),variables('HubRGName'),'Microsoft.Network/virtualNetworks',parameters('HubVNetName'))]"
+        "DMZSubnetRef": "[concat(resourceId('Microsoft.Network/virtualNetworks',parameters('HubVNetName')),'/subnets/',parameters('DMZSubnetName'))]"
     },
     "resources": [
         {
@@ -230,6 +251,7 @@
             }
         },
         {
+            "condition": "[equals(parameters('deployvng'),'Yes')]",
             "apiVersion": "2017-10-01",
             "type": "Microsoft.Network/publicIPAddresses",
             "name": "[variables('VNetGatewayPIPName')]",
@@ -239,6 +261,7 @@
             }
         },
         {
+            "condition": "[equals(parameters('deployvng'),'Yes')]",
             "apiVersion": "2017-10-01",
             "type": "Microsoft.Network/virtualNetworkGateways",
             "name": "[parameters('VNetGatewayName')]",
@@ -268,6 +291,7 @@
             }
         },
         {
+            "condition": "[equals(parameters('deployvng'),'Yes')]",
             "type": "Microsoft.Network/localNetworkGateways",
             "name": "[parameters('LocalNetworkGatewayName')]",
             "apiVersion": "2017-10-01",
@@ -284,11 +308,11 @@
             "apiVersion": "2017-05-10",
             "name": "Windows_VM_Deployment",
             "type": "Microsoft.Resources/deployments",
-            "resourceGroup": "[parameters('WindowsResourceGroupName')]",
+            "resourceGroup": "[parameters('WindowsVMResourceGroupName')]",
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "https://raw.githubusercontent.com/mcrosstx/AD_ADFS_Linked/master/ADDS.json",
+                    "uri": "https://raw.githubusercontent.com/go-planet/SDSU_VDC/master/windows_vm.json",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
@@ -299,17 +323,20 @@
                     "vmName": {"value": "[parameters('windowsvmName')]"},
                     "vmSize": {"value": "[parameters('windowsvmSize')]"}
                 }
-            }
+            },
+            "dependsOn": [
+                "[concat('Microsoft.Network/virtualNetworks/', parameters('HubVNetName'))]"
+            ]
         },
         {
             "apiVersion": "2017-05-10",
             "name": "Linux_VM_Deployment",
             "type": "Microsoft.Resources/deployments",
-            "resourceGroup": "[parameters('LinuxResourceGroupName')]",
+            "resourceGroup": "[parameters('LinuxVMResourceGroupName')]",
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "https://raw.githubusercontent.com/mcrosstx/AD_ADFS_Linked/master/ADDS.json",
+                    "uri": "https://raw.githubusercontent.com/go-planet/SDSU_VDC/master/linux_vm.json",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
@@ -320,7 +347,10 @@
                     "vmName": {"value": "[parameters('linuxvmName')]"},
                     "vmSize": {"value": "[parameters('linuxvmSize')]"}
                 }
-            }
+            },
+            "dependsOn": [
+                "[concat('Microsoft.Network/virtualNetworks/', parameters('HubVNetName'))]"
+            ]
         }
     ]
 }

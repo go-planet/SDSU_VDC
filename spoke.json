@@ -44,6 +44,13 @@
                 "description": "Address space for the Spoke Subscription DMZ Subnet"
             }
         },
+        "DMZNSGName": {
+            "type": "string",
+            "defaultValue": "subnet-Environment-Department-DMZ",
+            "metadata": {
+                "description": "Name for the Hub Subscription DMZ Subnet"
+            }
+        },
         "adminUsername": {
             "type": "string",
             "metadata": {
@@ -146,11 +153,37 @@
     },
     "resources": [
         {
+            "apiVersion": "2018-10-01",
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "name": "[parameters('DMZNSGName')]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+              "securityRules": [
+                {
+                  "name": "Internet_Deny",
+                  "properties": {
+                    "description": "Blanket Deny for Internet Traffic",
+                    "protocol": "*",
+                    "sourcePortRange": "*",
+                    "destinationPortRange": "*",
+                    "sourceAddressPrefix": "Internet",
+                    "destinationAddressPrefix": "*",
+                    "access": "Deny",
+                    "priority": 100,
+                    "direction": "Inbound"
+                  }
+                }
+              ]
+            }
+        },
+        {
             "name": "[parameters('SpokeVNetName')]",
             "type": "Microsoft.Network/virtualNetworks",
             "location": "[resourceGroup().location]",
             "apiVersion": "2015-06-15",
-            "dependsOn": [],
+            "dependsOn": [
+                "[concat('Microsoft.Network/networkSecurityGroups/', parameters('DMZNSGName'))]"
+            ],
             "tags": {
             },
             "properties": {
@@ -169,7 +202,10 @@
                     {
                         "name": "[parameters('DMZSubnetName')]",
                         "properties": {
-                            "addressPrefix": "[parameters('DMZSubnetPrefix')]"
+                            "addressPrefix": "[parameters('DMZSubnetPrefix')]",
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('DMZNSGName'))]"
+                            }
                         }
                     }
                 ]

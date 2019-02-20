@@ -2,27 +2,6 @@
     "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
-        "Environment": {
-            "type": "string",
-            "defaultValue": "SDSU-Gov-Hub-",
-            "metadata": {
-                "description": "Environment piece for naming convention"
-            }
-        },
-        "Department": {
-            "type": "string",
-            "defaultValue": "Network",
-            "metadata": {
-                "description": "Department piece for naming convention"
-            }
-        },
-        "Workload": {
-            "type": "string",
-            "defaultValue": "VNet",
-            "metadata": {
-                "description": "Workload piece for naming convention"
-            }
-        },
         "HubVNetName": {
             "type": "string",
             "defaultValue": "vnet-Environment-Department-Workload",

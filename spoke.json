@@ -1,0 +1,227 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "SpokeVNetName": {
+            "type": "string",
+            "defaultValue": "vnet-Environment-Department-Workload",
+            "metadata": {
+                "description": "Name of the Spoke Virtual Network"
+            }
+        },
+        "SpokeVNetPrefix":{
+            "type": "string",
+            "defaultValue": "10.0.0.0/25",
+            "metadata": {
+                "description": "This is the address space used to create the Spoke VNET"
+            }
+        },
+        "ADSubnetName": {
+            "type": "string",
+            "defaultValue": "subnet-Environment-Department-AD",
+            "metadata": {
+                "description": "Name for the Spoke Subscription AD Subnet"
+            }
+        },
+        "ADSubnetPrefix": {
+            "type": "string",
+            "defaultValue": "10.0.0.0/27",
+            "metadata": {
+                "description": "Address space for the Spoke Subscription AD Subnet"
+            }
+        },
+        "DMZSubnetName": {
+            "type": "string",
+            "defaultValue": "subnet-Environment-Department-DMZ",
+            "metadata": {
+                "description": "Name for the Spoke Subscription DMZ Subnet"
+            }
+        },
+        "DMZSubnetPrefix": {
+            "type": "string",
+            "defaultValue": "10.0.0.32/27",
+            "metadata": {
+                "description": "Address space for the Spoke Subscription DMZ Subnet"
+            }
+        },
+        "adminUsername": {
+            "type": "string",
+            "metadata": {
+                "description": "Administrative Username for VMs."
+            }
+        },
+        "adminPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Administratrive Password for VMs."
+            }
+        },
+        "windowsVMResourceGroupName": {
+            "type": "string",
+            "defaultValue": "rg-Environment-Department-WindowsVM",
+            "metadata": {
+                "description": "Name of the Resource Group for the Windows VM"
+            }
+        },
+        "windowsvmName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name for the Windows Virtual Machine."
+            }
+        },
+        "windowsvmSize": {
+            "defaultValue": "Standard_D1_v2",
+            "allowedValues": [
+                "Standard_D1_V2",
+                "Standard_D2_V2",
+                "Standard_D3_V2",
+                "Standard_D4_V2"
+            ],
+            "type": "string",
+            "metadata": {
+                "description": "Windows VM Instance Size"
+            }
+        },
+        "windowsOSVersion": {
+            "type": "string",
+            "defaultValue": "2016-Datacenter",
+            "allowedValues": [
+              "2012-R2-Datacenter",
+              "2012-R2-Datacenter-smalldisk",
+              "2016-Datacenter-with-Containers",
+              "2016-Datacenter",
+              "2016-Datacenter-smalldisk",
+              "2019-Datacenter",
+              "2019-Datacenter-smalldisk"
+            ],
+            "metadata": {
+                "description": "The Windows version for the VM. This will pick a fully patched image of this given Windows version."
+            }
+        },
+        "linuxVMResourceGroupName": {
+            "type": "string",
+            "defaultValue": "rg-Environment-Department-LinuxVM",
+            "metadata": {
+                "description": "Name of the Resource Group for the Linux VM"
+            }
+        },
+        "linuxvmName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name for the Linux Virtual Machine."
+            }
+        },
+        "linuxvmSize": {
+            "defaultValue": "Standard_D1_v2",
+            "allowedValues": [
+            "Standard_D1_V2",
+            "Standard_D2_V2",
+            "Standard_D3_V2",
+            "Standard_D4_V2"
+            ],
+            "type": "string",
+            "metadata": {
+                "description": "Linux VM Instance Size"
+            }
+        },
+        "linuxOSVersion": {
+            "type": "string",
+            "defaultValue": "18.04-LTS",
+            "allowedValues": [
+              "12.04.5-LTS",
+              "14.04.5-LTS",
+              "16.04-LTS",
+              "16.04.0-LTS",
+              "18.04-LTS",
+              "18.10"
+            ],
+            "metadata": {
+                "description": "The Linux version (Ubuntu) for the VM. This will pick a fully patched image of the given Linux version."
+            }
+        }
+    },
+    "variables": {
+        "ADSubnetRef": "[concat(resourceId('Microsoft.Network/virtualNetworks',parameters('SpokeVNetName')),'/subnets/',parameters('ADSubnetName'))]",
+        "DMZSubnetRef": "[concat(resourceId('Microsoft.Network/virtualNetworks',parameters('SpokeVNetName')),'/subnets/',parameters('DMZSubnetName'))]"
+    },
+    "resources": [
+        {
+            "name": "[parameters('SpokeVNetName')]",
+            "type": "Microsoft.Network/virtualNetworks",
+            "location": "[resourceGroup().location]",
+            "apiVersion": "2015-06-15",
+            "dependsOn": [],
+            "tags": {
+            },
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[parameters('SpokeVNetPrefix')]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "[parameters('ADSubnetName')]",
+                        "properties": {
+                            "addressPrefix": "[parameters('ADSubnetPrefix')]"
+                        }
+                    },
+                    {
+                        "name": "[parameters('DMZSubnetName')]",
+                        "properties": {
+                            "addressPrefix": "[parameters('DMZSubnetPrefix')]"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "2017-05-10",
+            "name": "Windows_VM_Deployment",
+            "type": "Microsoft.Resources/deployments",
+            "resourceGroup": "[parameters('WindowsVMResourceGroupName')]",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "https://raw.githubusercontent.com/go-planet/SDSU_VDC/master/windows_vm.json",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "adminUserName": {"value": "[parameters('adminUserName')]"},
+                    "adminPassword": {"value": "[parameters('adminPassword')]"},
+                    "subnetRef": {"value": "[variables('ADSubnetRef')]"},
+                    "windowsOSVersion" : {"value": "[parameters('windowsOSVersion')]"},
+                    "vmName": {"value": "[parameters('windowsvmName')]"},
+                    "vmSize": {"value": "[parameters('windowsvmSize')]"}
+                }
+            },
+            "dependsOn": [
+                "[concat('Microsoft.Network/virtualNetworks/', parameters('SpokeVNetName'))]"
+            ]
+        },
+        {
+            "apiVersion": "2017-05-10",
+            "name": "Linux_VM_Deployment",
+            "type": "Microsoft.Resources/deployments",
+            "resourceGroup": "[parameters('LinuxVMResourceGroupName')]",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "https://raw.githubusercontent.com/go-planet/SDSU_VDC/master/linux_vm.json",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "adminUserName": {"value": "[parameters('adminUserName')]"},
+                    "adminPassword": {"value": "[parameters('adminPassword')]"},
+                    "subnetRef": {"value": "[variables('DMZSubnetRef')]"},
+                    "linuxOSVersion" : {"value": "[parameters('linuxOSVersion')]"},
+                    "vmName": {"value": "[parameters('linuxvmName')]"},
+                    "vmSize": {"value": "[parameters('linuxvmSize')]"}
+                }
+            },
+            "dependsOn": [
+                "[concat('Microsoft.Network/virtualNetworks/', parameters('SpokeVNetName'))]"
+            ]
+        }
+    ]
+}

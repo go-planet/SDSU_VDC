@@ -1,0 +1,326 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "Environment": {
+            "type": "string",
+            "defaultValue": "SDSU-Gov-Hub-",
+            "metadata": {
+                "description": "Environment piece for naming convention"
+            }
+        },
+        "Department": {
+            "type": "string",
+            "defaultValue": "Network",
+            "metadata": {
+                "description": "Department piece for naming convention"
+            }
+        },
+        "Workload": {
+            "type": "string",
+            "defaultValue": "VNet",
+            "metadata": {
+                "description": "Workload piece for naming convention"
+            }
+        },
+        "HubVNetName": {
+            "type": "string",
+            "defaultValue": "vnet-Environment-Department-Workload",
+            "metadata": {
+                "description": "Name of the Hub Virtual Network"
+            }
+        },
+        "HubVNetPrefix":{
+            "type": "string",
+            "defaultValue": "10.0.0.0/25",
+            "metadata": {
+                "description": "This is the address space used to create the Hub VNET"
+            }
+        },
+        "VNetGatewayName": {
+            "type": "string",
+            "defaultValue": "vng-Environment-Department-Workload",
+            "metadata": {
+                "description": "Name of the Virtual Network Gateway"
+            }
+        },
+        "LocalNetworkGatewayName": {
+            "type": "string",
+            "defaultValue": "lng-Environment-Department-Workload",
+            "metadata": {
+                "description": "Name of the Local Network Gateway"
+            }
+        },
+        "LocalNetworkGatewayAddressSpace": {
+            "type": "array",
+            "defaultValue": ["10.0.0.0/8","172.16.0.0/12","192.168.0.0/16"],
+            "metadata": {
+                "description": "Array of CIDR Prefixes for Local Network Gateway"
+            }
+        },
+        "LocalNetworkGatewayIP": {
+            "type": "string",
+            "defaultValue": "0.0.0.0",
+            "metadata": {
+                "description": "IP of the VPN Peer that the Local Network Gateway will connect to"
+            }
+        },
+        "GatewaySubnetPrefix": {
+            "type": "string",
+            "defaultValue": "10.0.0.112/28",
+            "metadata": {
+                "description": "Address space for the Hub Subscription Gateway Subnet"
+            }
+        },
+        "ADSubnetName": {
+            "type": "string",
+            "defaultValue": "subnet-Environment-Department-AD",
+            "metadata": {
+                "description": "Name for the Hub Subscription AD Subnet"
+            }
+        },
+        "ADSubnetPrefix": {
+            "type": "string",
+            "defaultValue": "10.0.0.0/27",
+            "metadata": {
+                "description": "Address space for the Hub Subscription AD Subnet"
+            }
+        },
+        "DMZSubnetName": {
+            "type": "string",
+            "defaultValue": "subnet-Environment-Department-DMZ",
+            "metadata": {
+                "description": "Name for the Hub Subscription DMZ Subnet"
+            }
+        },
+        "DMZSubnetPrefix": {
+            "type": "string",
+            "defaultValue": "10.0.0.32/27",
+            "metadata": {
+                "description": "Address space for the Hub Subscription DMZ Subnet"
+            }
+        },
+        "adminUsername": {
+            "type": "string",
+            "metadata": {
+                "description": "Administrative Username for VMs."
+            }
+        },
+        "adminPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Administratrive Password for VMs."
+            }
+        },
+        "windowsvmName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name for the Windows Virtual Machine."
+            }
+        },
+        "windowsvmSize": {
+            "defaultValue": "Standard_D1_v2",
+            "allowedValues": [
+                "Standard_D1_V2",
+                "Standard_D2_V2",
+                "Standard_D3_V2",
+                "Standard_D4_V2"
+            ],
+            "type": "string",
+            "metadata": {
+                "description": "Windows VM Instance Size"
+            }
+        },
+        "windowsOSVersion": {
+            "type": "string",
+            "defaultValue": "2016-Datacenter",
+            "allowedValues": [
+              "2012-R2-Datacenter",
+              "2012-R2-Datacenter-smalldisk",
+              "2016-Datacenter-with-Containers",
+              "2016-Datacenter",
+              "2016-Datacenter-smalldisk",
+              "2019-Datacenter",
+              "2019-Datacenter-smalldisk"
+            ],
+            "metadata": {
+                "description": "The Windows version for the VM. This will pick a fully patched image of this given Windows version."
+            }
+          }
+        ,
+        "linuxvmName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name for the Linux Virtual Machine."
+            }
+        },
+        "linuxvmSize": {
+            "defaultValue": "Standard_D1_v2",
+            "allowedValues": [
+            "Standard_D1_V2",
+            "Standard_D2_V2",
+            "Standard_D3_V2",
+            "Standard_D4_V2"
+            ],
+            "type": "string",
+            "metadata": {
+                "description": "Linux VM Instance Size"
+            }
+        },
+        "linuxOSVersion": {
+            "type": "string",
+            "defaultValue": "18.04-LTS",
+            "allowedValues": [
+              "12.04.5-LTS",
+              "14.04.5-LTS",
+              "16.04-LTS",
+              "16.04.0-LTS",
+              "18.04-LTS",
+              "18.10"
+            ],
+            "metadata": {
+                "description": "The Linux version (Ubuntu) for the VM. This will pick a fully patched image of the given Linux version."
+            }
+        }
+    },
+    "variables": {
+        "VNetGatewayPIPName": "[concat(parameters('VNetGatewayName'),'_pip')]",
+        "GatewaySubnetRef": "[concat(resourceId('Microsoft.Network/virtualNetworks',parameters('HubVNetName')),'/subnets/','GatewaySubnet')]",
+        "ADSubnetRef": "[concat(resourceId('Microsoft.Network/virtualNetworks',parameters('HubVNetName')),'/subnets/',parameters('ADSubnetName'))]",
+        "DMZSubnetRef": "[concat(resourceId('Microsoft.Network/virtualNetworks',parameters('HubVNetName')),'/subnets/',parameters('DMZSubnetName'))]",
+        "HubSubID": "[subscription().subscriptionId]",
+        "HubRGName": "[resourceGroup().name]",
+        "HubVNetID": "[resourceId(variables('HubSubID'),variables('HubRGName'),'Microsoft.Network/virtualNetworks',parameters('HubVNetName'))]"
+    },
+    "resources": [
+        {
+            "name": "[parameters('HubVNetName')]",
+            "type": "Microsoft.Network/virtualNetworks",
+            "location": "[resourceGroup().location]",
+            "apiVersion": "2015-06-15",
+            "dependsOn": [],
+            "tags": {
+            },
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[parameters('HubVNetPrefix')]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "GatewaySubnet",
+                        "properties": {
+                            "addressPrefix": "[parameters('GatewaySubnetPrefix')]"
+                        }
+                    },
+                    {
+                        "name": "[parameters('ADSubnetName')]",
+                        "properties": {
+                            "addressPrefix": "[parameters('ADSubnetPrefix')]"
+                        }
+                    },
+                    {
+                        "name": "[parameters('DMZSubnetName')]",
+                        "properties": {
+                            "addressPrefix": "[parameters('DMZSubnetPrefix')]"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "2017-10-01",
+            "type": "Microsoft.Network/publicIPAddresses",
+            "name": "[variables('VNetGatewayPIPName')]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+              "publicIPAllocationMethod": "Dynamic"
+            }
+        },
+        {
+            "apiVersion": "2017-10-01",
+            "type": "Microsoft.Network/virtualNetworkGateways",
+            "name": "[parameters('VNetGatewayName')]",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+              "[concat('Microsoft.Network/publicIPAddresses/', variables('VNetGatewayPIPName'))]",
+              "[concat('Microsoft.Network/virtualNetworks/', parameters('HubVNetName'))]"
+            ],
+            "properties": {
+              "ipConfigurations": [
+                {
+                  "properties": {
+                    "privateIPAllocationMethod": "Dynamic",
+                    "subnet": {
+                      "id": "[variables('GatewaySubnetRef')]"
+                    },
+                    "publicIPAddress": {
+                      "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('VNetGatewayPIPName'))]"
+                    }
+                  },
+                  "name": "[concat(parameters('VNetGatewayName'),'ipconfig')]"
+                }
+              ],
+              "gatewayType": "Vpn",
+              "vpnType": "RouteBased",
+              "enableBgp": "false"
+            }
+        },
+        {
+            "type": "Microsoft.Network/localNetworkGateways",
+            "name": "[parameters('LocalNetworkGatewayName')]",
+            "apiVersion": "2017-10-01",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "gatewayIpAddress": "[parameters('LocalNetworkGatewayIP')]",
+                "localNetworkAddressSpace": {
+                    "addressPrefixes": "[parameters('LocalNetworkGatewayAddressSpace')]"
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "apiVersion": "2017-05-10",
+            "name": "Windows_VM_Deployment",
+            "type": "Microsoft.Resources/deployments",
+            "resourceGroup": "[parameters('WindowsResourceGroupName')]",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "https://raw.githubusercontent.com/mcrosstx/AD_ADFS_Linked/master/ADDS.json",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "adminUserName": {"value": "[parameters('adminUserName')]"},
+                    "adminPassword": {"value": "[parameters('adminPassword')]"},
+                    "subnetRef": {"value": "[variables('ADSubnetRef')]"},
+                    "windowsOSVersion" : {"value": "[parameters('windowsOSVersion')]"},
+                    "vmName": {"value": "[parameters('windowsvmName')]"},
+                    "vmSize": {"value": "[parameters('windowsvmSize')]"}
+                }
+            }
+        },
+        {
+            "apiVersion": "2017-05-10",
+            "name": "Linux_VM_Deployment",
+            "type": "Microsoft.Resources/deployments",
+            "resourceGroup": "[parameters('LinuxResourceGroupName')]",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "https://raw.githubusercontent.com/mcrosstx/AD_ADFS_Linked/master/ADDS.json",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "adminUserName": {"value": "[parameters('adminUserName')]"},
+                    "adminPassword": {"value": "[parameters('adminPassword')]"},
+                    "subnetRef": {"value": "[variables('DMZSubnetRef')]"},
+                    "linuxOSVersion" : {"value": "[parameters('linuxOSVersion')]"},
+                    "vmName": {"value": "[parameters('linuxvmName')]"},
+                    "vmSize": {"value": "[parameters('linuxvmSize')]"}
+                }
+            }
+        }
+    ]
+}

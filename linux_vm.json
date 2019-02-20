@@ -29,6 +29,7 @@
     },
     "adminPassword": {
       "type": "securestring",
+      "minLength": 12,
       "metadata": {
         "description": "Password for the Virtual Machine admin."
       }
@@ -69,7 +70,7 @@
     "nicName": "[concat(parameters('vmName'),'-nic')]",
     "publicIPAddressName": "[concat(parameters('vmName'),'-pip')]",
     "vmName": "[parameters('vmName')]",
-    "dnsLabelPrefix": "[parameters('vmName')]"
+    "dnsLabelPrefix": "[toLower(parameters('vmName'))]"
   },
   "resources": [
     {

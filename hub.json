@@ -94,6 +94,7 @@
         },
         "adminPassword": {
             "type": "securestring",
+            "minLength": 12,
             "metadata": {
                 "description": "Administratrive Password for VMs."
             }
@@ -217,7 +218,7 @@
                     "sourceAddressPrefix": "Internet",
                     "destinationAddressPrefix": "*",
                     "access": "Deny",
-                    "priority": 100,
+                    "priority": 1000,
                     "direction": "Inbound"
                   }
                 }

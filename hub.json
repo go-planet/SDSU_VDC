@@ -310,7 +310,7 @@
             "type": "Microsoft.Resources/deployments",
             "resourceGroup": "[parameters('WindowsVMResourceGroupName')]",
             "properties": {
-                "mode": "Incremental",
+                "mode": "Complete",
                 "templateLink": {
                     "uri": "https://raw.githubusercontent.com/go-planet/SDSU_VDC/master/windows_vm.json",
                     "contentVersion": "1.0.0.0"
@@ -334,7 +334,7 @@
             "type": "Microsoft.Resources/deployments",
             "resourceGroup": "[parameters('LinuxVMResourceGroupName')]",
             "properties": {
-                "mode": "Incremental",
+                "mode": "Complete",
                 "templateLink": {
                     "uri": "https://raw.githubusercontent.com/go-planet/SDSU_VDC/master/linux_vm.json",
                     "contentVersion": "1.0.0.0"
